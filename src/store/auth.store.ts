@@ -1,58 +1,106 @@
-import { create } from "zustand";
+import { create } from 'zustand';
 
-interface AuthState {
-  accessToken: string | null;
-  tokenApi: string | null;
-  sessionId: string | null;
-  id: string| null
-  isAuthenticated: boolean;
-  setAuth: (data: { accessToken: string}) => void;
-  setApiToken: (data: { tokenApi: string}) => void;
-  clearAuth: () => void;
+import Swal from 'sweetalert2';
+import { AuthCredentials, AuthResponse, loginAPI, refreshTokenAPI, signupAPI, SignupCredentials } from '@/midleware/auth.api';
+import getErrorMessage from '@/midleware/HelperApi';
+
+interface AuthStoreState {
+  user: any | null;
+  token: string | null;
+  isHydrated: boolean;
+  isLoading: boolean;
+  error: string | null;
+  setUser: (user: any) => void;
+  login: (creds: AuthCredentials) => Promise<AuthResponse | void>;
+  signup: (creds: SignupCredentials) => Promise<AuthResponse | void>;
+  logout: () => void;
+  refreshToken: () => Promise<void>;
 }
 
-const initializeAuthState = (): AuthState => {
-  const accessToken = localStorage.getItem("access_token");
-  const tokenApi = localStorage.getItem("tokenApi");
-  const sessionId = localStorage.getItem("sessionId");
-  const id = localStorage.getItem('id')
-  const isAuthenticated = Boolean(accessToken && tokenApi);
+const useAuthStore = create<AuthStoreState>((set, get) => ({
+  user: null,
+  token: sessionStorage.getItem("token"),
+  isHydrated: false,
+  isLoading: false,
+  error: null,
 
-  return {
-    accessToken,
-    tokenApi,
-    sessionId,
-    isAuthenticated,
-    id,
-    setAuth: () => {}, 
-    setApiToken: () => {}, 
-    clearAuth: () => {}, 
-  };
-};
-
-const useAuthStore = create<AuthState>((set) => ({
-  ...initializeAuthState(),
-
-  setAuth: ({ accessToken }) => {
-    set({
-      accessToken,
-      isAuthenticated: true,
-    });
-    localStorage.setItem("access_token", accessToken);
-  },
-  setApiToken: ({ tokenApi }) => {
-    set({
-      tokenApi,
-    });
-    localStorage.setItem("tokenApi", tokenApi);
+  setUser: (user: any) => {
+    localStorage.setItem('user', JSON.stringify(user));
+    set({ user });
   },
 
-  clearAuth: () => {
-    set({
-      accessToken: null, 
-    });
-    localStorage.removeItem("access_token");
+  login: async (credentials) => {
+    set({ isLoading: true , error: null,});
+    try {
+      const res: AuthResponse = await loginAPI(credentials);
+      const { user, token } = res.data;
+      sessionStorage.setItem('token', token.access_token);
+      localStorage.setItem('refresh', token.refresh_token);
+      sessionStorage.setItem('user', JSON.stringify(user));
+      set({ user, token: token.access_token, isLoading: false });
+      return res;
+    } catch (err) {
+       Swal.fire({
+        icon: 'error',
+        title: 'Oops...',
+        text: getErrorMessage(err, 'failed. Please try again.'),
+      });
+      set({ error: getErrorMessage(err), isLoading: false });
+    }
+  },
+
+  signup: async (credentials) => {
+    set({ isLoading: true });
+    try {
+      const res: AuthResponse = await signupAPI(credentials);
+      const { user, token } = res.data;
+      sessionStorage.setItem('token', token.access_token);
+      localStorage.setItem('refresh', token.refresh_token);
+      sessionStorage.setItem('user', JSON.stringify(user));
+      set({ user, token: token.access_token, isLoading: false });
+      return res;
+    } catch (err) {
+       Swal.fire({
+        icon: 'error',
+        title: 'Oops...',
+        text: getErrorMessage(err, 'failed. Please try again.'),
+      });
+      set({ error: getErrorMessage(err), isLoading: false });
+    }
+  },
+
+  logout: () => {
+    localStorage.clear();
+    set({ user: null, token: null });
+  },
+
+  refreshToken: async () => {
+    const refresh = localStorage.getItem('refresh');
+    console.log(refresh);
+    
+    if (!refresh) return get().logout();
+    try {
+      const res: AuthResponse = await refreshTokenAPI(refresh);
+      const { user, token } = res.data;
+      sessionStorage.setItem('token', token.access_token);
+      localStorage.setItem('refresh', token.refresh_token);
+      sessionStorage.setItem('user', JSON.stringify(user));
+      set({ user, token: token.access_token });
+    } catch {
+      get().logout();
+    }
   },
 }));
+
+// ✅ hydrate manually in main.ts
+export const hydrateAuth = () => {
+  const token = sessionStorage.getItem('token');
+  const user = sessionStorage.getItem('user');
+  useAuthStore.setState({
+    token: token || null,
+    user: user ? JSON.parse(user) : null,
+    isHydrated: true,
+  });
+};
 
 export default useAuthStore;

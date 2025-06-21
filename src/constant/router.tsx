@@ -9,6 +9,7 @@ import Dashboard from '@/pages/userPanel/Dashboard';
 import WebhooksPage from '@/pages/userPanel/Webhooks';
 import ApisPage from '@/pages/userPanel/ApiHistory';
 import WhatsappPage from '@/pages/userPanel/WhatsappAccount';
+import Home from '@/pages/Home';
 
 const Route: ReturnType<typeof createBrowserRouter> = createBrowserRouter([
   {
@@ -42,6 +43,10 @@ const Route: ReturnType<typeof createBrowserRouter> = createBrowserRouter([
       {
         path: listed.waProfile,
         element: <WhatsappPage/>,
+      },
+      {
+        path: listed.sinkronize,
+        element: <Home/>,
       },
     ],
   },

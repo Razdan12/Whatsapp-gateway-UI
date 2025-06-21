@@ -1,34 +1,53 @@
+import type React from 'react';
+import { yupResolver } from '@hookform/resolvers/yup';
 
-import type React from "react"
+import { useForm } from 'react-hook-form';
+import { Link, useNavigate } from 'react-router-dom';
+import * as yup from 'yup';
+import { useEffect, useState } from 'react';
+import { Eye, EyeOff, Mail, Lock, User, Zap } from 'lucide-react';
+import { Login, Register } from '@/utils/auth';
 
-import { useState } from "react"
-import { Eye, EyeOff, Mail, Lock, User, Zap } from "lucide-react"
-import { Link } from "react-router-dom"
+import useAuthStore from '../store/auth.store';
+import { listed } from '@/constant/listed';
+import Input from '@/components/ui/InputField';
 
 export default function RegisterPage() {
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  })
-  const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false);
+  const { signup, user, isLoading } = useAuthStore();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-   
-  }
+  const navigate = useNavigate();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    })
-  }
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<Register>({
+    defaultValues: { email: '', password: '' },
+    resolver: yupResolver(
+      yup.object().shape({
+        email: yup.string().required(),
+        password: yup.string().required(),
+        confirm_password: yup
+          .string()
+          .oneOf([yup.ref('password'), ''], 'Passwords must match')
+          .required(),
+      })
+    ),
+  });
+
+  const onSubmit = async (formData: Register) => {
+    await signup(formData);
+  };
+
+  useEffect(() => {
+    if (user) {
+      navigate(listed.dashboard);
+    }
+  }, [user, navigate]);
 
   return (
-    <div className="min-h-screen  flex items-center justify-center p-4"  > 
+    <div className="min-h-screen  flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         {/* Logo */}
         <div className="text-center mb-8">
@@ -40,59 +59,29 @@ export default function RegisterPage() {
 
         {/* Register Form */}
         <div className="bg-base-200 rounded-2xl shadow-xl p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium  mb-2">
-                Full Name
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" />
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  value={formData.name}
-                  onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                  placeholder="Enter your full name"
-                  required
-                />
-              </div>
+              <label htmlFor="">Email</label>
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                {...register('email')}
+                error={errors.email?.message}
+                placeholder="Enter your email"
+                required
+              />
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium  mb-2">
-                Email Address
-              </label>
+              <label htmlFor="">Password</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2  w-5 h-5" />
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                  placeholder="Enter your email"
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium  mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" />
-                <input
+                <Input
                   id="password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="w-full pl-10 pr-12 py-3 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                  placeholder="Create a password"
+                  type={showPassword ? 'text' : 'password'}
+                  {...register('password')}
+                  error={errors.password?.message}
+                  placeholder="Enter password"
                   required
                 />
                 <button
@@ -100,33 +89,36 @@ export default function RegisterPage() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 "
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
                 </button>
               </div>
             </div>
 
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium  mb-2">
-                Confirm Password
-              </label>
+              <label htmlFor="">Confirm Password</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" />
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  className="w-full pl-10 pr-12 py-3 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                  placeholder="Confirm your password"
+                <Input
+                  id="confirm_password"
+                  type={showPassword ? 'text' : 'password'}
+                  {...register('confirm_password')}
+                  error={errors.confirm_password?.message}
+                  placeholder="Enter password"
                   required
                 />
                 <button
                   type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 "
                 >
-                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
                 </button>
               </div>
             </div>
@@ -139,11 +131,11 @@ export default function RegisterPage() {
                 required
               />
               <label htmlFor="terms" className="ml-2 text-sm ">
-                I agree to the{" "}
+                I agree to the{' '}
                 <Link to="#" className="text-green-600 hover:text-green-500">
                   Terms of Service
-                </Link>{" "}
-                and{" "}
+                </Link>{' '}
+                and{' '}
                 <Link to="#" className="text-green-600 hover:text-green-500">
                   Privacy Policy
                 </Link>
@@ -161,15 +153,18 @@ export default function RegisterPage() {
                   Creating account...
                 </div>
               ) : (
-                "Create Account"
+                'Create Account'
               )}
             </button>
           </form>
 
           <div className="mt-6 text-center">
             <p className="">
-              Already have an account?{" "}
-              <Link to="/login" className="text-green-600 hover:text-green-500 font-medium">
+              Already have an account?{' '}
+              <Link
+                to="/login"
+                className="text-green-600 hover:text-green-500 font-medium"
+              >
                 Sign in
               </Link>
             </p>
@@ -177,5 +172,5 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

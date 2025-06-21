@@ -1,4 +1,5 @@
 import React from 'react'
+import {QRCodeSVG} from 'qrcode.react';
 
 interface QRCodeProps {
   src: string
@@ -6,17 +7,13 @@ interface QRCodeProps {
   height?: number
 }
 
-export const QRCode: React.FC<QRCodeProps> = ({ src, width = 264, height = 264 }) => {
+export const QRCode: React.FC<QRCodeProps> = ({ src}) => {
   return (
-    <div className="bg-white p-4 rounded-lg mb-8">
-      <img
-        src={src}
-        alt="QR Code"
-        width={width}
-        height={height}
-        className="rounded-lg"
-      />
+    <div className='bg-white p-3'>
+
+      <QRCodeSVG value={src} className='w-80 h-80'/>
     </div>
+
   )
 }
 
@@ -39,6 +36,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ qrCodeSrc }) => {
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-[#111b21] text-white">
       <QRCode src={qrCodeSrc} />
+      QR {qrCodeSrc}
       <h1 className="text-2xl font-bold mb-4">Use WhatsApp on your computer</h1>
       <InstructionsList />
     </div>

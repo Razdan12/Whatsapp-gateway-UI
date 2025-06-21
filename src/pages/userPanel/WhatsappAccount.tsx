@@ -1,6 +1,4 @@
-'use client';
-
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Plus,
   Search,
@@ -8,100 +6,63 @@ import {
   Edit,
   Trash2,
   Eye,
-  Webhook,
   CheckCircle,
   XCircle,
-  AlertCircle,
-  Copy,
   Play,
+  QrCode,
+  LogOut,
 } from 'lucide-react';
 
-const webhooks = [
-  {
-    id: 1,
-    name: 'Message Events',
-    url: 'https://api.yourapp.com/webhooks/whatsapp/messages',
-    events: ['message.received', 'message.delivered', 'message.read'],
-    status: 'active',
-    lastTriggered: '2 minutes ago',
-    successRate: '99.2%',
-    totalCalls: 15420,
-  },
-  {
-    id: 2,
-    name: 'Status Updates',
-    url: 'https://api.yourapp.com/webhooks/whatsapp/status',
-    events: ['status.update', 'phone.verified'],
-    status: 'active',
-    lastTriggered: '15 minutes ago',
-    successRate: '98.7%',
-    totalCalls: 8934,
-  },
-  {
-    id: 3,
-    name: 'Error Notifications',
-    url: 'https://api.yourapp.com/webhooks/whatsapp/errors',
-    events: ['message.failed', 'webhook.failed'],
-    status: 'inactive',
-    lastTriggered: '2 hours ago',
-    successRate: '95.1%',
-    totalCalls: 234,
-  },
-];
-
-const availableEvents = [
-  {
-    id: 'message.received',
-    name: 'Message Received',
-    description: 'Triggered when a message is received',
-  },
-  {
-    id: 'message.delivered',
-    name: 'Message Delivered',
-    description: 'Triggered when a message is delivered',
-  },
-  {
-    id: 'message.read',
-    name: 'Message Read',
-    description: 'Triggered when a message is read',
-  },
-  {
-    id: 'message.failed',
-    name: 'Message Failed',
-    description: 'Triggered when a message fails to send',
-  },
-  {
-    id: 'status.update',
-    name: 'Status Update',
-    description: 'Triggered when contact status changes',
-  },
-  {
-    id: 'phone.verified',
-    name: 'Phone Verified',
-    description: 'Triggered when a phone number is verified',
-  },
-  {
-    id: 'webhook.failed',
-    name: 'Webhook Failed',
-    description: 'Triggered when a webhook delivery fails',
-  },
-];
+import SessionStore from '@/store/session.store';
+import { SessionItem } from '@/midleware/session.api';
+import { BsWhatsapp } from 'react-icons/bs';
+import { useNavigate } from 'react-router-dom';
+import { listed } from '@/constant/listed';
+import Modal, { closeModal, openModal } from '@/components/ui/Modal';
+import QRComponent from '@/components/QRComponen';
 
 export default function WhatsappPage() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('all');
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showTestModal, setShowTestModal] = useState(false);
-  const [selectedWebhook, setSelectedWebhook] = useState(null);
+  const {
+    getAllSession,
+    sessions,
+    setIdSession,
+    createSession,
+    sessionId,
+    session,
+    deleteSessions,
+    updateSessions
+  } = SessionStore();
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [search, setSearch] = useState<string>('');
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [triger, setTriger] = useState<boolean>(false);
+  const navigate = useNavigate();
+  const [sessionName, setSessionName] = useState<string>('');
 
-  const filteredWebhooks = webhooks.filter((webhook) => {
-    const matchesSearch =
-      webhook.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      webhook.url.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      selectedStatus === 'all' || webhook.status === selectedStatus;
-    return matchesSearch && matchesStatus;
-  });
+  useEffect(() => {
+    const payload: string = `limit=${itemsPerPage}&page=${currentPage}&search=name:${search}`;
+    getAllSession(payload);
+  }, [itemsPerPage, currentPage, search, triger]);
+
+  const handleClikk = (id: string) => {
+    setIdSession(id);
+    openModal('qr-wa');
+  };
+
+  const handleCreate = async () => {
+    await createSession({ name: sessionName });
+  };
+
+  useEffect(() => {
+    if (session) {
+      closeModal('add-sessions');
+      openModal('qr-wa');
+    }
+  }, [session]);
+
+  const handleDelete = (id: string) => {
+    deleteSessions(id);
+  };
 
   return (
     <div className="space-y-6">
@@ -124,8 +85,8 @@ export default function WhatsappPage() {
               <input
                 type="text"
                 placeholder="Search webhooks..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
@@ -134,8 +95,8 @@ export default function WhatsappPage() {
             <div className="flex items-center space-x-2">
               <Filter className="w-4 h-4 text-gray-500" />
               <select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
+                // value={selectedStatus}
+                // onChange={(e) => setSelectedStatus(e.target.value)}
                 className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent"
               >
                 <option value="all">All Status</option>
@@ -145,7 +106,7 @@ export default function WhatsappPage() {
             </div>
           </div>
           <button
-            onClick={() => setShowCreateModal(true)}
+            onClick={() => openModal('add-sessions')}
             className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg transition-all duration-200 transform hover:-translate-y-0.5 flex items-center"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -160,106 +121,94 @@ export default function WhatsappPage() {
           <table className="w-full">
             <thead className="bg-base-100 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Webhook
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  Account
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  Connection
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Events
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Success Rate
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Last Triggered
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody className=" divide-y divide-gray-200">
-              {filteredWebhooks.map((webhook) => (
-                <tr key={webhook.id} className="hover:bg-base-300">
+              {sessions?.items.map((item: SessionItem, index: number) => (
+                <tr key={index} className="hover:bg-base-300">
                   <td className="px-6 py-4">
                     <div className="flex items-center">
                       <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center mr-4">
-                        <Webhook className="w-5 h-5 text-white" />
+                        <BsWhatsapp className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <div className="text-sm font-medium ">
-                          {webhook.name}
-                        </div>
-                        <div className="text-sm  font-mono">{webhook.url}</div>
-                        <div className="text-xs ">
-                          {webhook.totalCalls.toLocaleString()} total calls
-                        </div>
+                        <div className="text-sm font-medium ">{item.name}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        webhook.status === 'active'
+                        item.status === true
                           ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 '
+                          : 'bg-red-100 text-red-800'
                       }`}
                     >
-                      {webhook.status === 'active' ? (
+                      {item.status === true ? (
                         <CheckCircle className="w-3 h-3 mr-1" />
                       ) : (
                         <XCircle className="w-3 h-3 mr-1" />
                       )}
-                      {webhook.status}
+                      {item.status === true ? 'Online' : 'Offline'}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-wrap gap-1">
-                      {webhook.events.slice(0, 2).map((event) => (
-                        <span
-                          key={event}
-                          className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800"
-                        >
-                          {event}
-                        </span>
-                      ))}
-                      {webhook.events.length > 2 && (
-                        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                          +{webhook.events.length - 2} more
-                        </span>
-                      )}
-                    </div>
-                  </td>
+
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <span className="text-sm font-medium ">
-                        {webhook.successRate}
-                      </span>
-                      <div className="ml-2 w-16 bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-green-500 h-2 rounded-full"
-                          style={{ width: webhook.successRate }}
-                        ></div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm ">
-                    {webhook.lastTriggered}
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer tooltip ${
+                        item.isActive === true
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}
+                    >
+                      {item.isActive === true ? (
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                      ) : (
+                        <XCircle className="w-3 h-3 mr-1" />
+                      )}
+                      {item.isActive === true ? 'Active' : 'Non Active'}
+                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex items-center space-x-2">
-                      <button className="text-blue-600 hover:text-blue-900 p-1 rounded">
-                        <Play className="w-4 h-4" />
+                    <div className="flex items-center space-x-1">
+                      <button
+                        className="btn btn-sm btn-success btn-ghost text-green-500 hover:text-white tooltip"
+                        data-tip="Status"
+                        onClick={() => handleClikk(item.id || '')}
+                      >
+                        <QrCode className="w-4 h-4" />
                       </button>
-                      <button className="text-green-600 hover:text-green-900 p-1 rounded">
-                        <Eye className="w-4 h-4" />
+                      <button
+                        className="btn btn-sm btn-warning btn-ghost hover:text-white tooltip"
+                        disabled={!item.status}
+                        data-tip="Logout"
+                      >
+                        <LogOut className="w-4 h-4" />
                       </button>
-                      <button className="text-gray-600 hover:text-gray-900 p-1 rounded">
+                      <button
+                        className="btn btn-sm btn-primary btn-ghost text-blue-500 hover:text-white tooltip"
+                        data-tip="Edit"
+                      >
                         <Edit className="w-4 h-4" />
                       </button>
-                      <button className="text-red-600 hover:text-red-900 p-1 rounded">
+                      <button
+                        className="btn btn-sm btn-error btn-ghost text-red-500 hover:text-white tooltip"
+                        data-tip="Delete"
+                        onClick={() => handleDelete(item.id ?? '')}
+                      >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -271,85 +220,42 @@ export default function WhatsappPage() {
         </div>
       </div>
 
-      {/* Create Webhook Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            <div
-              className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
-              onClick={() => setShowCreateModal(false)}
-            />
-            <div className="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
-              <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
-                Create Webhook
-              </h3>
-              <form className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Webhook Name
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder="Message Events"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Endpoint URL
-                  </label>
-                  <input
-                    type="url"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder="https://api.yourapp.com/webhooks/whatsapp"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Events to Subscribe
-                  </label>
-                  <div className="grid grid-cols-2 gap-3 max-h-48 overflow-y-auto">
-                    {availableEvents.map((event) => (
-                      <label
-                        key={event.id}
-                        className="flex items-start space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
-                      >
-                        <input
-                          type="checkbox"
-                          className="mt-1 rounded border-gray-300 text-green-600 focus:ring-green-500"
-                        />
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {event.name}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {event.description}
-                          </div>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex justify-end space-x-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowCreateModal(false)}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg hover:shadow-lg transition-all duration-200"
-                  >
-                    Create Webhook
-                  </button>
-                </div>
-              </form>
+      <Modal id="add-sessions">
+        <div>
+          <p className="text-xl text-center w-full">Add Session</p>
+          <div>
+            <fieldset className="fieldset bg-base-200 border-base-300 rounded-box w-xs border p-4">
+              <legend className="fieldset-legend">Session Name</legend>
+              <input
+                type="text"
+                className="input w-full"
+                placeholder="Session 1"
+                value={sessionName}
+                onChange={(e) => setSessionName(e.target.value)}
+                required
+              />
+              <p className="label">
+                You can edit session name later on from settings
+              </p>
+            </fieldset>
+            <div className="w-full flex justify-end mt-4">
+              <button
+                type="submit"
+                onClick={handleCreate}
+                className="bg-gradient-to-r from-green-500 to-emerald-600 text-white btn btn-ghost w-full rounded-lg"
+              >
+                Submit
+              </button>
             </div>
           </div>
         </div>
-      )}
+      </Modal>
+
+      <Modal id="qr-wa">
+        <div className="w-full flex flex-col items-center justify-center gap-3">
+          <QRComponent sessionId={sessionId} />
+        </div>
+      </Modal>
     </div>
   );
 }

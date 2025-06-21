@@ -19,5 +19,6 @@ export const listedUser = {
     webhook: "/dashboard/webhooks",
     settings: "/dashboard/settings",
     profile: "/dashboard/profile",
+    sinkronize: "/dashboard/synchronize",
 
   }

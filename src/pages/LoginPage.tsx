@@ -1,19 +1,20 @@
-import { Eye, EyeOff, Mail, Lock} from 'lucide-react';
-import  { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { yupResolver } from '@hookform/resolvers/yup';
 
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import * as yup from 'yup';
 import { Login } from '../utils/auth';
-import { authApi } from '../midleware/auth.api';
+
 import useAuthStore from '../store/auth.store';
 import { listed } from '@/constant/listed';
+import Input from '@/components/ui/InputField';
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
+ const { login, user, isLoading } = useAuthStore();
   // const handleSubmit = async (e: React.FormEvent) => {};
 
   const navigate = useNavigate();
@@ -32,22 +33,15 @@ export default function LoginPage() {
   });
 
   const onSubmit = async (formData: Login) => {
-    setIsLoading(true);
-    try {
-      const {data} = await authApi.login(formData);
-      const token = data.data.token;
-      const tokenApi = data.data.user.apiToken
-      
-      useAuthStore.getState().setAuth({ accessToken: token });
-      useAuthStore.getState().setApiToken({tokenApi: tokenApi})
-      navigate(listed.dashboard)
-    } catch (error) {
-      console.log(error);
-    }finally {
-      setIsLoading(false);
-    }
+    await login(formData);
   };
 
+  useEffect(() => {
+    if (user) {
+      navigate(listed.dashboard);
+    }
+  }, [user, navigate]);
+  
   return (
     <div
       className="min-h-screen flex items-center justify-center p-4"
@@ -66,43 +60,30 @@ export default function LoginPage() {
         <div className="bg-base-200 rounded-2xl shadow-xl p-8">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium  mb-2"
-              >
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" />
-                <input
-                  id="email"
-                  type="email"
-                   {...register('email')}
-                  className="w-full pl-10 pr-4 py-3 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                  placeholder="Enter your email"
-                  required
-                />
-              </div>
+            <label htmlFor="">Email</label>
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                {...register('email')}
+                error={errors.email?.message}
+                placeholder="Enter your email"
+                required
+              />
             </div>
 
             <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium mb-2"
-              >
-                Password
-              </label>
+              <label htmlFor="">Password</label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" />
-                <input
+                <Input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
-                   {...register('password')}
-                  className="w-full pl-10 pr-12 py-3 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                  placeholder="Enter your password"
+                  {...register('password')}
+                  error={errors.password?.message}
+                  placeholder="Enter password"
                   required
                 />
-                <button
+                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 "
@@ -113,6 +94,7 @@ export default function LoginPage() {
                     <Eye className="w-5 h-5" />
                   )}
                 </button>
+           
               </div>
             </div>
 
