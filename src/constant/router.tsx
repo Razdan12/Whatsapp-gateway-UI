@@ -1,19 +1,50 @@
-import { createBrowserRouter } from "react-router-dom";
-import { listedUser } from "./listed";
-import SignIn from "../pages/Login";
-import Home from "../pages/Home";
+import { createBrowserRouter } from 'react-router-dom';
+import { listed, listedUser } from './listed';
 
+import HomePage from '../pages/HomePage';
+import RegisterPage from '../pages/RegisterPage';
+import LoginPage from '../pages/LoginPage';
+import LayoutAdmin from '@/components/Layout';
+import Dashboard from '@/pages/userPanel/Dashboard';
+import WebhooksPage from '@/pages/userPanel/Webhooks';
+import ApisPage from '@/pages/userPanel/ApiHistory';
+import WhatsappPage from '@/pages/userPanel/WhatsappAccount';
 
 const Route: ReturnType<typeof createBrowserRouter> = createBrowserRouter([
   {
-    path: listedUser.signin,
-    element: <SignIn />,
+    path: listedUser.home,
+    element: <HomePage />,
   },
   {
-    path: listedUser.whatsapp,
-    element: <Home />,
+    path: listedUser.signup,
+    element: <RegisterPage />,
   },
-  
+  {
+    path: listedUser.login,
+    element: <LoginPage />,
+  },
+  {
+    path: '/',
+    element: <LayoutAdmin />,
+    children: [
+      {
+        path: listed.dashboard,
+        element: <Dashboard />,
+      },
+      {
+        path: listed.webhook,
+        element: <WebhooksPage/>,
+      },
+      {
+        path: listed.apis,
+        element: <ApisPage/>,
+      },
+      {
+        path: listed.waProfile,
+        element: <WhatsappPage/>,
+      },
+    ],
+  },
 ]);
 
 export default Route;

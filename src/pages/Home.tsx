@@ -25,6 +25,11 @@ const Home: React.FC = () => {
       }
     });
 
+    socket.on('qr', (data) => {
+      console.log('QR Code received:', data);
+      getQR();
+    });
+
     // Mendengarkan event ketika WhatsApp berhasil terhubung
     socket.on('whatsapp_connected', (data) => {
       console.log('WhatsApp connected:', data);
