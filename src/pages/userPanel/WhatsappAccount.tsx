@@ -5,10 +5,8 @@ import {
   Filter,
   Edit,
   Trash2,
-  Eye,
   CheckCircle,
   XCircle,
-  Play,
   QrCode,
   LogOut,
 } from 'lucide-react';
@@ -17,7 +15,7 @@ import SessionStore from '@/store/session.store';
 import { SessionItem } from '@/midleware/session.api';
 import { BsWhatsapp } from 'react-icons/bs';
 import { useNavigate } from 'react-router-dom';
-import { listed } from '@/constant/listed';
+
 import Modal, { closeModal, openModal } from '@/components/ui/Modal';
 import QRComponent from '@/components/QRComponen';
 
